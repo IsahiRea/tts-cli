@@ -9,7 +9,7 @@ const program = new Command();
 
 function readText(text) {
     console.log('Speaking the provided text...');
-    say.speak(text, 'Alex', 1.0, (err) => {
+    say.speak(text, 'Microsoft Zira Desktop', (err) => {
         if (err) {
             console.error('Error using text-to-speech:', err);
             return;
@@ -33,7 +33,7 @@ async function readURL(url, rate) {
         }
 
         console.log('Speaking the provided website...');
-        say.speak(extractedText, 'Alex', float(rate), (err) => {
+        say.speak(extractedText, 'Microsoft Zira Desktop', rate, (err) => {
             if (err) {
                 console.error('Error using text-to-speech:', err);
                 return;
@@ -45,8 +45,6 @@ async function readURL(url, rate) {
         console.error('Error fetching the webpage', error.message)
     }
 }
-
-
 
 program
     .name('tts')
@@ -65,7 +63,7 @@ program
     .description('Convert webpage content to speech')
     .option('-r, --rate <number>', 'Set the speaking rate (default is 1.0)', '1.0')
     .action((url, options)=> {
-        readURL(url, options.rate);
+        readURL(url, parseFloat(options.rate));
     })
 
 program.parse(process.argv);
