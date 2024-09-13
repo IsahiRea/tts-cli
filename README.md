@@ -12,6 +12,9 @@ Text-to-Speech is a command-line tool designed for reading online websites.
     - `npm install -g .
 
 ### Usage
+Ensure the script is an executable:
+- `chmod +x tts-cli.js.js`
+
 Run the tool using: 
 - `./tts-cli.js <command> [options]`
 
