@@ -7,29 +7,50 @@ const cheerio = require('cheerio');
 
 const program = new Command();
 
-// Helper function to handle text-to-speech
-function speakText(text, rate = 1.0) {
-    if (isNaN(rate) || rate <= 0) {
-        console.error('Invalid speaking rate. Rate must be a positive number.');
+// Queue to manage speech tasks
+const speechQueue = [];
+let isSpeaking = false;
+
+// Helper function to handle text-to-speech with concurrency control
+function enqueueSpeechTask(text, rate = 1.0) {
+    speechQueue.push({ text, rate });
+    if (!isSpeaking) {
+        processQueue();
+    }
+}
+
+// Function to process the speech queue
+function processQueue() {
+    if (speechQueue.length === 0) {
+        isSpeaking = false;
         return;
     }
+
+    isSpeaking = true;
+    const { text, rate } = speechQueue.shift();
 
     console.log('Speaking the provided text...');
     say.speak(text, 'Microsoft Zira Desktop', rate, (err) => {
         if (err) {
             console.error('Error using text-to-speech:', err);
+            isSpeaking = false;
             return;
         }
         console.log('Text has been spoken successfully.');
+        processQueue(); // Move to the next task
     });
 }
 
-
-function readText(text) {
-    speakText(text, rate);
+// Function to read and speak custom text
+function readText(text, rate = 1.0) {
+    if (isNaN(rate) || rate <= 0) {
+        console.error('Invalid speaking rate. Rate must be a positive number.');
+        return;
+    }
+    enqueueSpeechTask(text, rate);
 }
 
-async function readURL(url, rate) {
+async function readURL(url, rate = 1.0) {
     try {
         const response = await axios.get(url);
         const $ = cheerio.load(response.data);
@@ -44,7 +65,7 @@ async function readURL(url, rate) {
         }
 
         console.log('Speaking the provided website...');
-        speakText(extractedText, rate);
+        enqueueSpeechTask(extractedText, rate);
 
     } catch (error) {
         console.error('Error fetching the webpage', error.message)
