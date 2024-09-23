@@ -7,9 +7,15 @@ const cheerio = require('cheerio');
 
 const program = new Command();
 
-function readText(text) {
+// Helper function to handle text-to-speech
+function speakText(text, rate = 1.0) {
+    if (isNaN(rate) || rate <= 0) {
+        console.error('Invalid speaking rate. Rate must be a positive number.');
+        return;
+    }
+
     console.log('Speaking the provided text...');
-    say.speak(text, 'Microsoft Zira Desktop', (err) => {
+    say.speak(text, 'Microsoft Zira Desktop', rate, (err) => {
         if (err) {
             console.error('Error using text-to-speech:', err);
             return;
@@ -18,9 +24,14 @@ function readText(text) {
     });
 }
 
+
+function readText(text) {
+    speakText(text, rate);
+}
+
 async function readURL(url, rate) {
     try {
-        const response = await axios({GET, url});
+        const response = await axios.get(url);
         const $ = cheerio.load(response.data);
 
         // Extract all meaningful text (from <p>, <h1>, <h2>, etc.)
@@ -33,13 +44,7 @@ async function readURL(url, rate) {
         }
 
         console.log('Speaking the provided website...');
-        say.speak(extractedText, 'Microsoft Zira Desktop', rate, (err) => {
-            if (err) {
-                console.error('Error using text-to-speech:', err);
-                return;
-            }
-            console.log('Text has been spoken successfully.');
-        });
+        speakText(extractedText, rate);
 
     } catch (error) {
         console.error('Error fetching the webpage', error.message)
@@ -54,16 +59,19 @@ program
 program
     .command('say <text>')
     .description('Convert custom text to speech')
-    .action((text)=>{
-        readText(text);
-    })
+    .option('-r, --rate <number>', 'Set the speaking rate (default is 1.0)', '1.0')
+    .action((text, options) => {
+        const rate = parseFloat(options.rate);
+        readText(text, rate);
+    });
 
 program
     .command('read <url>')
     .description('Convert webpage content to speech')
     .option('-r, --rate <number>', 'Set the speaking rate (default is 1.0)', '1.0')
-    .action((url, options)=> {
-        readURL(url, parseFloat(options.rate));
-    })
+    .action((url, options) => {
+        const rate = parseFloat(options.rate);
+        readURL(url, rate);
+    });
 
 program.parse(process.argv);
