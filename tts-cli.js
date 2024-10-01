@@ -10,6 +10,7 @@ const program = new Command();
 // Queue to manage speech tasks
 const speechQueue = [];
 let isSpeaking = false;
+let isPaused = false;
 
 // Helper function to handle text-to-speech with concurrency control
 function enqueueSpeechTask(text, rate = 1.0) {
@@ -21,7 +22,7 @@ function enqueueSpeechTask(text, rate = 1.0) {
 
 // Function to process the speech queue
 function processQueue() {
-    if (speechQueue.length === 0) {
+    if (speechQueue.length === 0|| isPaused) {
         isSpeaking = false;
         return;
     }
@@ -39,6 +40,36 @@ function processQueue() {
         console.log('Text has been spoken successfully.');
         processQueue(); // Move to the next task
     });
+}
+
+// Pause the speech queue
+function pauseQueue() {
+    if (isSpeaking) {
+        isPaused = true;
+        console.log('Speech queue has been paused.');
+    } else {
+        console.log('No ongoing speech task to pause.');
+    }
+}
+
+// Resume the speech queue
+function resumeQueue() {
+    if (isPaused) {
+        isPaused = false;
+        console.log('Speech queue has been resumed.');
+        processQueue(); // Resume processing
+    } else {
+        console.log('Queue is not paused.');
+    }
+}
+
+// Cancel all tasks in the speech queue
+function cancelQueue() {
+    say.stop();  // Stop any currently playing speech
+    speechQueue.length = 0;  // Clear the queue
+    isSpeaking = false;
+    isPaused = false;
+    console.log('Speech queue has been cancelled.');
 }
 
 // Function to read and speak custom text
@@ -74,7 +105,7 @@ async function readURL(url, rate = 1.0) {
 
 program
     .name('tts')
-    .version('1.0.0')
+    .version('1.1.0')
     .description('CLI tool for text-to-speech functionality')
 
 program
@@ -93,6 +124,29 @@ program
     .action((url, options) => {
         const rate = parseFloat(options.rate);
         readURL(url, rate);
+    });
+
+// Control Commands
+
+program
+    .command('pause')
+    .description('Pause the current speech task')
+    .action(() => {
+        pauseQueue();
+    });
+
+program
+    .command('resume')
+    .description('Resume the paused speech queue')
+    .action(() => {
+        resumeQueue();
+    });
+
+program
+    .command('cancel')
+    .description('Cancel all ongoing and pending speech tasks')
+    .action(() => {
+        cancelQueue();
     });
 
 program.parse(process.argv);
