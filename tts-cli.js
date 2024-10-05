@@ -15,14 +15,14 @@ let isPaused = false;
 // Helper function to handle text-to-speech with concurrency control
 function enqueueSpeechTask(text, rate = 1.0) {
     speechQueue.push({ text, rate });
-    if (!isSpeaking) {
+    if (!isSpeaking && !isPaused) {
         processQueue();
     }
 }
 
 // Function to process the speech queue
 function processQueue() {
-    if (speechQueue.length === 0|| isPaused) {
+    if (speechQueue.length === 0 || isPaused) {
         isSpeaking = false;
         return;
     }
@@ -72,6 +72,19 @@ function cancelQueue() {
     console.log('Speech queue has been cancelled.');
 }
 
+// Get the status of the queue
+function getQueueStatus() {
+    if (isPaused) {
+        console.log('The speech queue is paused.');
+    } else if (isSpeaking) {
+        console.log('A speech task is currently running.');
+    } else {
+        console.log('The speech queue is idle.');
+    }
+
+    console.log(`Pending tasks in the queue: ${speechQueue.length}`);
+}
+
 // Function to read and speak custom text
 function readText(text, rate = 1.0) {
     if (isNaN(rate) || rate <= 0) {
@@ -81,32 +94,32 @@ function readText(text, rate = 1.0) {
     enqueueSpeechTask(text, rate);
 }
 
+// Function to fetch and read content from a URL
 async function readURL(url, rate = 1.0) {
     try {
         const response = await axios.get(url);
         const $ = cheerio.load(response.data);
 
-        // Extract all meaningful text (from <p>, <h1>, <h2>, etc.)
+        // Extract meaningful text (from <p>, <h1>, <h2>, etc.)
         const extractedText = $('p, h1, h2, h3').text().trim();
 
-        // If there's no text, print an error
         if (!extractedText) {
             console.error('No readable content found on the webpage.');
             return;
         }
 
-        console.log('Speaking the provided website...');
+        console.log('Speaking the content from the webpage...');
         enqueueSpeechTask(extractedText, rate);
 
     } catch (error) {
-        console.error('Error fetching the webpage', error.message)
+        console.error('Error fetching the webpage:', error.message);
     }
 }
 
 program
     .name('tts')
-    .version('1.1.0')
-    .description('CLI tool for text-to-speech functionality')
+    .version('1.3.0')
+    .description('CLI tool for text-to-speech functionality');
 
 program
     .command('say <text>')
@@ -126,7 +139,7 @@ program
         readURL(url, rate);
     });
 
-// Control Commands
+// New commands to pause, resume, cancel, and show status of the speech queue
 
 program
     .command('pause')
@@ -147,6 +160,13 @@ program
     .description('Cancel all ongoing and pending speech tasks')
     .action(() => {
         cancelQueue();
+    });
+
+program
+    .command('status')
+    .description('Show the current status of the speech queue')
+    .action(() => {
+        getQueueStatus();
     });
 
 program.parse(process.argv);
